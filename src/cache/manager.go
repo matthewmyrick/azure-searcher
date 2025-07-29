@@ -45,13 +45,24 @@ func (m *Manager) GetCachedResourceGroups(subscriptionID string) ([]types.Resour
 		return nil, false
 	}
 
-	if !isCacheValid(subCache.LastUpdated, m.ttl) {
+	// Determine the TTL to use: subscription-specific interval or global default
+	ttlMinutes := m.ttl
+	if m.GetSubscriptionAutoRefreshEnabled(subscriptionID) {
+		intervalStr := m.GetSubscriptionRefreshInterval(subscriptionID)
+		if intervalStr != "" {
+			if interval, err := m.ParseRefreshInterval(intervalStr); err == nil {
+				ttlMinutes = int(interval.Minutes())
+			}
+		}
+	}
+
+	if !isCacheValid(subCache.LastUpdated, ttlMinutes) {
 		return nil, false
 	}
 
 	var resourceGroups []types.ResourceGroup
 	for _, cachedRG := range subCache.ResourceGroups {
-		if isCacheValid(cachedRG.CachedAt, m.ttl) {
+		if isCacheValid(cachedRG.CachedAt, ttlMinutes) {
 			resourceGroups = append(resourceGroups, types.ResourceGroup{
 				Name:      cachedRG.Name,
 				Location:  cachedRG.Location,
