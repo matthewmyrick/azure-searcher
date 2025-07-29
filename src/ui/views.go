@@ -351,7 +351,7 @@ func (m *Model) viewResources() string {
 		
 		// Show filter help text when focused
 		if m.FilterInput.Focused() {
-			filterHelp := CacheStatusStyle.Render("Examples: tags=\"Environment:Production\",\"Team:Backend\" resources=vm,storage | Press ? for types | Ctrl+E: exit filter | Esc: clear")
+			filterHelp := CacheStatusStyle.Render("Examples: tags=\"Environment:Production\",\"Team:Backend\" resources=vm,storage | Press ? for types | Enter/Ctrl+E: exit | Esc: clear")
 			header += filterHelp + "\n"
 		}
 	}

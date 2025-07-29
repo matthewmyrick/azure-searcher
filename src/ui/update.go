@@ -300,7 +300,7 @@ func (m *Model) handleResourceKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.Cursor = 0
 			m.ScrollOffset = 0
 			return m, nil
-		case "ctrl+e":
+		case "ctrl+e", "enter":
 			// Exit filter but keep the filter text and filtered results
 			m.FilterInput.Blur()
 			m.Cursor = 0
@@ -341,7 +341,7 @@ func (m *Model) handleResourceKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.Cursor = 0
 			m.ScrollOffset = 0
 			return m, nil
-		case "ctrl+e":
+		case "ctrl+e", "enter":
 			// Exit search but keep the search text and filtered results
 			m.SearchInput.Blur()
 			m.Cursor = 0
