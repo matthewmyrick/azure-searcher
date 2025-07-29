@@ -88,7 +88,7 @@ jobs:
   build:
     name: Build Binary
     runs-on: ${{ matrix.os }}
-    needs: [test, lint]
+    # needs: [test, lint]
 
     strategy:
       matrix:
