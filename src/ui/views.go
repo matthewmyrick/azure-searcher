@@ -27,6 +27,202 @@ func (m *Model) View() string {
 	return "Unknown state"
 }
 
+// getResourceIcon returns an appropriate icon based on the resource type
+func getResourceIcon(resourceType string) string {
+	// Convert to lowercase and check for common Azure resource types
+	lowerType := strings.ToLower(resourceType)
+	
+	// Virtual Machines and Compute
+	if strings.Contains(lowerType, "virtualmachine") || strings.Contains(lowerType, "microsoft.compute/virtualmachines") {
+		return "💻"
+	}
+	if strings.Contains(lowerType, "microsoft.compute/disks") {
+		return "💾"
+	}
+	if strings.Contains(lowerType, "microsoft.compute/snapshots") {
+		return "📸"
+	}
+	if strings.Contains(lowerType, "microsoft.compute/images") {
+		return "🖼️"
+	}
+	if strings.Contains(lowerType, "microsoft.compute/availabilitysets") {
+		return "🔗"
+	}
+	
+	// Storage
+	if strings.Contains(lowerType, "microsoft.storage/storageaccounts") {
+		return "🗄️"
+	}
+	if strings.Contains(lowerType, "microsoft.storage") {
+		return "📦"
+	}
+	
+	// Networking
+	if strings.Contains(lowerType, "microsoft.network/virtualnetworks") {
+		return "🌐"
+	}
+	if strings.Contains(lowerType, "microsoft.network/networkinterfaces") {
+		return "🔌"
+	}
+	if strings.Contains(lowerType, "microsoft.network/networksecuritygroups") {
+		return "🔒"
+	}
+	if strings.Contains(lowerType, "microsoft.network/publicipaddresses") {
+		return "📡"
+	}
+	if strings.Contains(lowerType, "microsoft.network/loadbalancers") {
+		return "⚖️"
+	}
+	if strings.Contains(lowerType, "microsoft.network/applicationgateways") {
+		return "🚪"
+	}
+	if strings.Contains(lowerType, "microsoft.network/vpngateways") || strings.Contains(lowerType, "microsoft.network/virtualnetworkgateways") {
+		return "🔐"
+	}
+	if strings.Contains(lowerType, "microsoft.network/dnszones") {
+		return "🌍"
+	}
+	if strings.Contains(lowerType, "microsoft.network/privatednszones") {
+		return "🔏"
+	}
+	if strings.Contains(lowerType, "microsoft.network/trafficmanagerprofiles") {
+		return "🚦"
+	}
+	if strings.Contains(lowerType, "microsoft.network/frontdoors") {
+		return "🚪"
+	}
+	if strings.Contains(lowerType, "microsoft.network/firewalls") || strings.Contains(lowerType, "microsoft.network/azurefirewalls") {
+		return "🔥"
+	}
+	if strings.Contains(lowerType, "microsoft.network/privateendpoints") {
+		return "🔗"
+	}
+	
+	// Databases
+	if strings.Contains(lowerType, "microsoft.sql/servers") {
+		return "🗃️"
+	}
+	if strings.Contains(lowerType, "microsoft.sql/databases") {
+		return "🗄️"
+	}
+	if strings.Contains(lowerType, "microsoft.dbformysql") {
+		return "🐬"
+	}
+	if strings.Contains(lowerType, "microsoft.dbforpostgresql") {
+		return "🐘"
+	}
+	if strings.Contains(lowerType, "microsoft.documentdb") || strings.Contains(lowerType, "cosmosdb") {
+		return "🌌"
+	}
+	if strings.Contains(lowerType, "microsoft.cache/redis") {
+		return "⚡"
+	}
+	
+	// Web and App Services
+	if strings.Contains(lowerType, "microsoft.web/sites") {
+		return "🌐"
+	}
+	if strings.Contains(lowerType, "microsoft.web/serverfarms") {
+		return "🏗️"
+	}
+	if strings.Contains(lowerType, "microsoft.web/certificates") {
+		return "📜"
+	}
+	
+	// Containers
+	if strings.Contains(lowerType, "microsoft.containerregistry/registries") {
+		return "🐳"
+	}
+	if strings.Contains(lowerType, "microsoft.containerservice/managedclusters") {
+		return "☸️"
+	}
+	if strings.Contains(lowerType, "microsoft.containerinstance") {
+		return "📦"
+	}
+	
+	// Security and Identity
+	if strings.Contains(lowerType, "microsoft.keyvault/vaults") {
+		return "🔐"
+	}
+	if strings.Contains(lowerType, "microsoft.managedidentity") {
+		return "🆔"
+	}
+	
+	// Analytics and AI
+	if strings.Contains(lowerType, "microsoft.databricks") {
+		return "⚡"
+	}
+	if strings.Contains(lowerType, "microsoft.machinelearning") || strings.Contains(lowerType, "microsoft.machinelearningservices") {
+		return "🤖"
+	}
+	if strings.Contains(lowerType, "microsoft.cognitiveservices") {
+		return "🧠"
+	}
+	if strings.Contains(lowerType, "microsoft.search/searchservices") {
+		return "🔍"
+	}
+	if strings.Contains(lowerType, "microsoft.datafactory") {
+		return "🏭"
+	}
+	if strings.Contains(lowerType, "microsoft.synapse") {
+		return "⚡"
+	}
+	if strings.Contains(lowerType, "microsoft.streamanalytics") {
+		return "📊"
+	}
+	if strings.Contains(lowerType, "microsoft.eventhub") {
+		return "📨"
+	}
+	
+	// Monitoring and Management
+	if strings.Contains(lowerType, "microsoft.insights") {
+		return "📊"
+	}
+	if strings.Contains(lowerType, "microsoft.operationalinsights") || strings.Contains(lowerType, "microsoft.operationsmanagement") {
+		return "📈"
+	}
+	if strings.Contains(lowerType, "microsoft.automation") {
+		return "🤖"
+	}
+	if strings.Contains(lowerType, "microsoft.logic") {
+		return "⚙️"
+	}
+	
+	// Service Bus and Messaging
+	if strings.Contains(lowerType, "microsoft.servicebus") {
+		return "🚌"
+	}
+	if strings.Contains(lowerType, "microsoft.eventgrid") {
+		return "📬"
+	}
+	
+	// IoT
+	if strings.Contains(lowerType, "microsoft.devices/iothubs") || strings.Contains(lowerType, "microsoft.iothub") {
+		return "📡"
+	}
+	if strings.Contains(lowerType, "microsoft.iotcentral") {
+		return "🏭"
+	}
+	
+	// Media Services
+	if strings.Contains(lowerType, "microsoft.media") {
+		return "🎬"
+	}
+	
+	// CDN
+	if strings.Contains(lowerType, "microsoft.cdn") {
+		return "🌍"
+	}
+	
+	// API Management
+	if strings.Contains(lowerType, "microsoft.apimanagement") {
+		return "🔗"
+	}
+	
+	// Default icon for unknown types
+	return "📄"
+}
+
 // viewSubscriptions renders the subscription selection view
 func (m *Model) viewSubscriptions() string {
 	s := TitleStyle.Render("Select Azure Subscription") + "\n\n"
@@ -107,6 +303,24 @@ func (m *Model) viewLoading() string {
 
 // viewResources renders the resource browsing view with scrolling
 func (m *Model) viewResources() string {
+	// If showing resource types help, show only that
+	if m.ShowResourceTypes {
+		helpText := getResourceTypeAliases()
+		helpBox := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			Padding(1, 2).
+			MaxWidth(80).
+			MaxHeight(m.ViewportHeight - 4).
+			Render(helpText)
+		
+		centered := lipgloss.Place(
+			m.ViewportWidth, m.ViewportHeight,
+			lipgloss.Center, lipgloss.Center,
+			helpBox,
+		)
+		return centered
+	}
+
 	cacheStatus := "📡 Live data"
 	if m.LastLoadFromCache {
 		cacheStatus = "⚡ Cached data"
@@ -125,7 +339,24 @@ func (m *Model) viewResources() string {
 	if m.SearchInput.Focused() {
 		searchView = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Render(searchView)
 	}
-	header += searchView + "\n\n"
+	header += searchView + "\n"
+	
+	// Filter input (collapsible - only show if it has content or is focused)
+	if m.FilterInput.Focused() || m.FilterInput.Value() != "" {
+		filterView := m.FilterInput.View()
+		if m.FilterInput.Focused() {
+			filterView = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Render(filterView)
+		}
+		header += "\n" + filterView + "\n"
+		
+		// Show filter help text when focused
+		if m.FilterInput.Focused() {
+			filterHelp := CacheStatusStyle.Render("Examples: tags=\"Environment:Production\",\"Team:Backend\" resources=vm,storage | Press ? for types | Ctrl+E: exit filter | Esc: clear")
+			header += filterHelp + "\n"
+		}
+	}
+	
+	header += "\n"
 
 	// Build the full list of items (visible items with their display strings)
 	var items []string
@@ -166,7 +397,7 @@ func (m *Model) viewResources() string {
 					resCursor = ">"
 				}
 				
-				resLine := fmt.Sprintf("  %s 📄 %s (%s)", resCursor, res.Name, res.Type)
+				resLine := fmt.Sprintf("  %s %s %s (%s)", resCursor, getResourceIcon(res.Type), res.Name, res.Type)
 				if isSelected {
 					items = append(items, SelectedStyle.Render(resLine))
 				} else {
@@ -220,9 +451,9 @@ func (m *Model) viewResources() string {
 	// Footer (always visible)
 	var footer string
 	if len(items) == 0 {
-		footer = "\nEnter: expand/collapse | /: exact search | \\: fuzzy search | Ctrl+E: exit search | Ctrl+R: refresh | PgUp/PgDn: scroll | Esc: back | Ctrl+Q: quit"
+		footer = "\nEnter: expand/collapse | Ctrl+O: open in browser | Ctrl+F: filter | /: exact search | \\: fuzzy search | Ctrl+E: exit search | Ctrl+R: refresh | Esc: back | Ctrl+Q: quit"
 	} else {
-		footer = fmt.Sprintf("\nShowing %d-%d of %d items | Enter: expand/collapse | /: exact | \\: fuzzy | Ctrl+E: exit search | Ctrl+R: refresh | PgUp/PgDn: scroll | Esc: back | Ctrl+Q: quit", 
+		footer = fmt.Sprintf("\nShowing %d-%d of %d items | Enter: expand | Ctrl+O: open | Ctrl+F: filter | /: exact | \\: fuzzy | Ctrl+R: refresh | Esc: back | Ctrl+Q: quit", 
 			startIdx+1, endIdx, len(items))
 	}
 	

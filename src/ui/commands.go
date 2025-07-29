@@ -2,6 +2,8 @@ package ui
 
 import (
 	"log"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"azure-searcher/src/azure"
@@ -117,5 +119,39 @@ func WaitForProgressCmd(progressChan <-chan types.ProgressUpdate) tea.Cmd {
 			Total:     update.Total,
 			Processed: update.Processed,
 		}
+	}
+}
+
+// openURLCmd opens a URL in the default system browser
+func openURLCmd(url string) tea.Cmd {
+	return func() tea.Msg {
+		var cmd *exec.Cmd
+		
+		switch runtime.GOOS {
+		case "darwin":
+			cmd = exec.Command("open", url)
+		case "linux":
+			cmd = exec.Command("xdg-open", url)
+		case "windows":
+			cmd = exec.Command("cmd", "/c", "start", url)
+		default:
+			// Unsupported platform, return nil
+			return nil
+		}
+		
+		if err := cmd.Start(); err != nil {
+			// Log error but don't crash the app
+			log.Printf("Failed to open URL: %v", err)
+		}
+		
+		return nil
+	}
+}
+
+// showResourceTypesCmd shows available resource type filters
+func showResourceTypesCmd() tea.Cmd {
+	return func() tea.Msg {
+		// This will trigger a help message to be shown
+		return ShowResourceTypesMsg{}
 	}
 }

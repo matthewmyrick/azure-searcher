@@ -40,6 +40,9 @@ type (
 	StartAsyncFetchMsg struct {
 		Model *Model
 	}
+
+	// ShowResourceTypesMsg shows available resource types for filtering
+	ShowResourceTypesMsg struct{}
 )
 
 func (e ErrorMsg) Error() string {

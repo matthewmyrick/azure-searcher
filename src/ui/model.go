@@ -16,8 +16,9 @@ import (
 // Model represents the main TUI model
 type Model struct {
 	// Application state
-	State      string // "subscriptions", "loading", "resources", "config"
-	SearchMode string // "fuzzy" or "exact"
+	State             string // "subscriptions", "loading", "resources", "config"
+	SearchMode        string // "fuzzy" or "exact"
+	ShowResourceTypes bool   // Whether to show resource types help
 	
 	// Configuration
 	ConfiguringSub    types.Subscription // Subscription being configured
@@ -32,9 +33,10 @@ type Model struct {
 	FilteredGroups     []types.ResourceGroup
 
 	// UI components
-	SearchInput textinput.Model
-	Spinner     spinner.Model
-	Progress    progress.Model
+	SearchInput  textinput.Model
+	FilterInput  textinput.Model
+	Spinner      spinner.Model
+	Progress     progress.Model
 
 	// Navigation and viewport
 	Cursor         int
@@ -68,6 +70,12 @@ func NewModel() (*Model, error) {
 	ti.Placeholder = "Search: <resourcegroup> <resource> (e.g., 'prod vm' or just 'prod')..."
 	ti.CharLimit = 50
 	ti.Width = 50
+
+	// Initialize filter input
+	fi := textinput.New()
+	fi.Placeholder = "Filter: tags=\"key:value\",\"key2:value2\" resources=vm,disk (Press ? for help)"
+	fi.CharLimit = 100
+	fi.Width = 50
 
 	// Initialize interval input
 	intervalInput := textinput.New()
@@ -106,6 +114,7 @@ func NewModel() (*Model, error) {
 		SearchMode:      "exact", // Default to exact search
 		ConfigMode:      "menu",  // Default config mode
 		SearchInput:     ti,
+		FilterInput:     fi,
 		IntervalInput:   intervalInput,
 		Spinner:         s,
 		Progress:        prog,
@@ -131,10 +140,19 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) CalculateResourceViewport() int {
 	// Account for:
 	// - Title (2 lines: title + cache status)
+	// - Search mode text (1 line)
 	// - Search input (3 lines: input + borders + spacing)
+	// - Filter input (3 lines if visible: input + borders + spacing)
 	// - Help text (1 line)
 	// - Some padding (2 lines)
-	return m.ViewportHeight - 8
+	baseHeight := 10
+	
+	// Add extra lines if filter is visible
+	if m.FilterInput.Focused() || m.FilterInput.Value() != "" {
+		baseHeight += 4 // Filter input + help text + spacing
+	}
+	
+	return m.ViewportHeight - baseHeight
 }
 
 // EnsureCursorInViewport adjusts scroll offset to keep cursor visible

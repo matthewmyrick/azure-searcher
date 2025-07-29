@@ -10,28 +10,31 @@ type Subscription struct {
 
 // Resource represents an Azure resource
 type Resource struct {
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Kind     string `json:"kind"`
-	ID       string `json:"id"`
-	AzureURL string `json:"azure_url"`
+	Name     string            `json:"name"`
+	Type     string            `json:"type"`
+	Kind     string            `json:"kind"`
+	ID       string            `json:"id"`
+	Tags     map[string]string `json:"tags"`
+	AzureURL string            `json:"azure_url"`
 }
 
 // ResourceGroup represents an Azure resource group
 type ResourceGroup struct {
-	Name      string     `json:"name"`
-	Location  string     `json:"location"`
-	Resources []Resource `json:"resources"`
-	Expanded  bool       `json:"-"`
+	Name      string            `json:"name"`
+	Location  string            `json:"location"`
+	Tags      map[string]string `json:"tags"`
+	Resources []Resource        `json:"resources"`
+	Expanded  bool              `json:"-"`
 }
 
 // CachedResourceGroup represents a cached resource group with timestamp
 type CachedResourceGroup struct {
-	Name      string     `json:"name"`
-	Location  string     `json:"location"`
-	Resources []Resource `json:"resources"`
-	Expanded  bool       `json:"-"`
-	CachedAt  time.Time  `json:"cached_at"`
+	Name      string            `json:"name"`
+	Location  string            `json:"location"`
+	Tags      map[string]string `json:"tags"`
+	Resources []Resource        `json:"resources"`
+	Expanded  bool              `json:"-"`
+	CachedAt  time.Time         `json:"cached_at"`
 }
 
 // SubscriptionCache represents cached data for a subscription

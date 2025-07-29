@@ -42,12 +42,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			TickCmd(),
 		)
 
+	case ShowResourceTypesMsg:
+		m.ShowResourceTypes = true
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.ViewportHeight = msg.Height
 		m.ViewportWidth = msg.Width
 		m.SearchInput.Width = msg.Width - 4 // Account for borders and padding
 		if m.SearchInput.Width < 20 {
 			m.SearchInput.Width = 20
+		}
+		m.FilterInput.Width = msg.Width - 4
+		if m.FilterInput.Width < 20 {
+			m.FilterInput.Width = 20
 		}
 		m.Progress.Width = msg.Width - 4
 		if m.Progress.Width < 20 {
@@ -271,6 +279,99 @@ func (m *Model) handleIntervalInputKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleResourceKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
+	// Handle resource types help display
+	if m.ShowResourceTypes {
+		if msg.String() == "esc" {
+			m.ShowResourceTypes = false
+			return m, nil
+		}
+		// Ignore other keys when showing help
+		return m, nil
+	}
+
+	// Handle input-focused states first to prevent key interception
+	if m.FilterInput.Focused() {
+		// Handle special keys when filter is focused
+		switch msg.String() {
+		case "esc":
+			m.FilterInput.Blur()
+			m.FilterInput.SetValue("")
+			m.filterResourceGroups()
+			m.Cursor = 0
+			m.ScrollOffset = 0
+			return m, nil
+		case "ctrl+e":
+			// Exit filter but keep the filter text and filtered results
+			m.FilterInput.Blur()
+			m.Cursor = 0
+			m.ScrollOffset = 0
+			return m, nil
+		case "ctrl+q", "ctrl+c":
+			return m, tea.Quit
+		case "ctrl+r":
+			// Allow refresh even when filter is focused
+			m.CacheManager.InvalidateSubscription(m.SelectedSub.ID)
+			m.State = "loading"
+			m.TotalRGs = 0
+			m.ProcessedRGs = 0
+			m.ProgressChan = make(chan types.ProgressUpdate, 100)
+			m.FilterInput.Blur() // Unfocus filter when refreshing
+			return m, tea.Batch(
+				LoadResourceGroupsCmd(m),
+				TickCmd(),
+			)
+		case "?":
+			// Show available resource types
+			return m, showResourceTypesCmd()
+		default:
+			// Regular typing in filter input - pass all keys through
+			m.FilterInput, cmd = m.FilterInput.Update(msg)
+			m.filterResourceGroups()
+			m.Cursor = 0
+			m.ScrollOffset = 0
+			return m, cmd
+		}
+	} else if m.SearchInput.Focused() {
+		// Handle special keys even when search is focused
+		switch msg.String() {
+		case "esc":
+			m.SearchInput.Blur()
+			m.SearchInput.SetValue("")
+			m.filterResourceGroups() // This will reset to normal mode
+			m.Cursor = 0
+			m.ScrollOffset = 0
+			return m, nil
+		case "ctrl+e":
+			// Exit search but keep the search text and filtered results
+			m.SearchInput.Blur()
+			m.Cursor = 0
+			m.ScrollOffset = 0
+			return m, nil
+		case "ctrl+q", "ctrl+c":
+			return m, tea.Quit
+		case "ctrl+r":
+			// Allow refresh even when search is focused
+			m.CacheManager.InvalidateSubscription(m.SelectedSub.ID)
+			m.State = "loading"
+			m.TotalRGs = 0
+			m.ProcessedRGs = 0
+			m.ProgressChan = make(chan types.ProgressUpdate, 100)
+			m.SearchInput.Blur() // Unfocus search when refreshing
+			return m, tea.Batch(
+				LoadResourceGroupsCmd(m),
+				TickCmd(),
+			)
+		default:
+			// Regular typing in search input - pass all keys through
+			m.SearchInput, cmd = m.SearchInput.Update(msg)
+			m.filterResourceGroups()
+			m.Cursor = 0
+			m.ScrollOffset = 0
+			return m, cmd
+		}
+	}
+
+	// Handle navigation keys only when inputs are not focused
 	switch msg.String() {
 	case "ctrl+q", "ctrl+c":
 		return m, tea.Quit
@@ -324,7 +425,10 @@ func (m *Model) handleResourceKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.Cursor = 0
 		}
 		m.EnsureCursorInViewport()
-	case "home", "g":
+	case "home":
+		m.Cursor = 0
+		m.ScrollOffset = 0
+	case "g":
 		m.Cursor = 0
 		m.ScrollOffset = 0
 	case "end", "G":
@@ -335,6 +439,11 @@ func (m *Model) handleResourceKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "enter":
 		m.toggleResourceGroup()
+	case "ctrl+o":
+		return m.openCurrentResourceInBrowser()
+	case "ctrl+f":
+		m.FilterInput.Focus()
+		return m, nil
 	case "/":
 		m.SearchMode = "exact"
 		m.SearchInput.Focus()
@@ -347,46 +456,6 @@ func (m *Model) handleResourceKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.filterResourceGroups()
 		m.Cursor = 0
 		m.ScrollOffset = 0
-	default:
-		if m.SearchInput.Focused() {
-			// Handle special keys even when search is focused
-			switch msg.String() {
-			case "esc":
-				m.SearchInput.Blur()
-				m.SearchInput.SetValue("")
-				m.filterResourceGroups() // This will reset to normal mode
-				m.Cursor = 0
-				m.ScrollOffset = 0
-				return m, nil
-			case "ctrl+e":
-				// Exit search but keep the search text and filtered results
-				m.SearchInput.Blur()
-				m.Cursor = 0
-				m.ScrollOffset = 0
-				return m, nil
-			case "ctrl+q", "ctrl+c":
-				return m, tea.Quit
-			case "ctrl+r":
-				// Allow refresh even when search is focused
-				m.CacheManager.InvalidateSubscription(m.SelectedSub.ID)
-				m.State = "loading"
-				m.TotalRGs = 0
-				m.ProcessedRGs = 0
-				m.ProgressChan = make(chan types.ProgressUpdate, 100)
-				m.SearchInput.Blur() // Unfocus search when refreshing
-				return m, tea.Batch(
-					LoadResourceGroupsCmd(m),
-					TickCmd(),
-				)
-			default:
-				// Regular typing in search input
-				m.SearchInput, cmd = m.SearchInput.Update(msg)
-				m.filterResourceGroups()
-				m.Cursor = 0
-				m.ScrollOffset = 0
-				return m, cmd
-			}
-		}
 	}
 	return m, nil
 }
@@ -419,15 +488,8 @@ func (m *Model) handleResourceGroupsLoadedMsg(msg ResourceGroupsLoadedMsg) (tea.
 
 // filterResourceGroups filters resource groups based on search input and current search mode
 func (m *Model) filterResourceGroups() {
-	query := m.SearchInput.Value()
-	
-	// Use the appropriate search method based on search mode
-	if m.SearchMode == "exact" {
-		m.FilteredGroups = m.FuzzyMatcher.SearchResourceGroupsExact(query, m.ResourceGroups)
-	} else {
-		// Default to fuzzy search
-		m.FilteredGroups = m.FuzzyMatcher.SearchResourceGroupsTwoPart(query, m.ResourceGroups)
-	}
+	// Use the new filter function that handles both search and advanced filters
+	m.filterResourceGroupsWithCriteria()
 }
 
 // toggleResourceGroup toggles the expansion state of a resource group
@@ -464,4 +526,34 @@ func (m *Model) countVisibleItems() int {
 		}
 	}
 	return count
+}
+
+// openCurrentResourceInBrowser opens the currently selected resource in the default browser
+func (m *Model) openCurrentResourceInBrowser() (tea.Model, tea.Cmd) {
+	visibleIdx := 0
+	for i := range m.FilteredGroups {
+		// Check if we're on the resource group line
+		if visibleIdx == m.Cursor {
+			// For resource groups, we could potentially open the Azure portal to the RG
+			// but for now, we'll skip this
+			return m, nil
+		}
+		visibleIdx++
+		
+		// Check resources within expanded groups
+		if m.FilteredGroups[i].Expanded {
+			for j := range m.FilteredGroups[i].Resources {
+				if visibleIdx == m.Cursor {
+					// Found the selected resource
+					resource := m.FilteredGroups[i].Resources[j]
+					if resource.AzureURL != "" {
+						return m, openURLCmd(resource.AzureURL)
+					}
+					return m, nil
+				}
+				visibleIdx++
+			}
+		}
+	}
+	return m, nil
 }

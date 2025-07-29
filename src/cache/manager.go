@@ -55,6 +55,7 @@ func (m *Manager) GetCachedResourceGroups(subscriptionID string) ([]types.Resour
 			resourceGroups = append(resourceGroups, types.ResourceGroup{
 				Name:      cachedRG.Name,
 				Location:  cachedRG.Location,
+				Tags:      cachedRG.Tags,
 				Resources: cachedRG.Resources,
 				Expanded:  false,
 			})
@@ -85,6 +86,7 @@ func (m *Manager) CacheResourceGroups(subscriptionID, subscriptionName string, r
 		cachedRGs[rg.Name] = types.CachedResourceGroup{
 			Name:      rg.Name,
 			Location:  rg.Location,
+			Tags:      rg.Tags,
 			Resources: rg.Resources,
 			CachedAt:  now,
 		}

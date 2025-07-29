@@ -12,11 +12,11 @@ var (
 		Foreground(lipgloss.Color("#FFFFFF"))
 
 	ResourceGroupStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#04B575")).
+		Foreground(lipgloss.Color("#0078D4")). // Azure blue
 		Bold(true)
 
 	ResourceStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#A0A0A0"))
+		Foreground(lipgloss.Color("#E0E0E0")) // Lighter gray for better visibility
 
 	CacheStatusStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("244"))
