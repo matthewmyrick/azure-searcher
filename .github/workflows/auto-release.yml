@@ -109,6 +109,6 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean --tag ${{ steps.new-version.outputs.tag }}
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
