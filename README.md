@@ -23,23 +23,39 @@ A fast, interactive Terminal User Interface (TUI) application for browsing Azure
 
 ## Requirements
 
-- Go 1.19 or later
+- Go 1.23 or later
 - Azure CLI (`az`) installed and configured
 - Active Azure subscription
 
 ## Installation
 
+### Using go install (Recommended)
+
+Install directly from GitHub:
+
 ```bash
-git clone <repository-url>
+go install github.com/matthewmyrick/azure-searcher@latest
+```
+
+This will install the `azure-searcher` binary to your `$GOPATH/bin` directory (or `$HOME/go/bin` if GOPATH is not set).
+
+### Building from source
+
+```bash
+git clone https://github.com/matthewmyrick/azure-searcher
 cd azure-searcher
 go build -o azure-searcher
 ```
 
 ## Usage
 
+Run the application:
+
 ```bash
-./azure-searcher
+azure-searcher
 ```
+
+If installed via `go install`, make sure `$GOPATH/bin` (or `$HOME/go/bin`) is in your PATH.
 
 ## Controls
 
