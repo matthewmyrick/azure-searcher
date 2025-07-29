@@ -95,45 +95,19 @@ jobs:
         if: steps.pr-labels.outputs.bump != 'none'
         run: go test -v ./...
 
-      - name: Create and push tag
+      - name: Trigger release workflow
         if: steps.pr-labels.outputs.bump != 'none'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git tag -a "${{ steps.new-version.outputs.tag }}" -m "Release ${{ steps.new-version.outputs.tag }}"
-          git push origin "${{ steps.new-version.outputs.tag }}"
-
-      - name: Generate changelog
-        if: steps.pr-labels.outputs.bump != 'none'
-        id: changelog
-        run: |
-          # Get commits since last tag
-          if [ "${{ steps.latest-tag.outputs.tag }}" != "v0.0.0" ]; then
-            changelog=$(git log --oneline ${{ steps.latest-tag.outputs.tag }}..HEAD --pretty=format:"- %s (%h)")
-          else
-            changelog=$(git log --oneline --pretty=format:"- %s (%h)")
-          fi
-          
-          # Create changelog content
-          cat > changelog.md << EOF
-          ## What's Changed
-          
-          $changelog
-          
-          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.latest-tag.outputs.tag }}...${{ steps.new-version.outputs.tag }}
-          EOF
-          
-          echo "changelog-file=changelog.md" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
-        if: steps.pr-labels.outputs.bump != 'none'
-        uses: softprops/action-gh-release@v2
+        uses: actions/github-script@v7
         with:
-          tag_name: ${{ steps.new-version.outputs.tag }}
-          name: Release ${{ steps.new-version.outputs.tag }}
-          body_path: changelog.md
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'release.yml',
+              ref: 'main',
+              inputs: {
+                tag: '${{ steps.new-version.outputs.tag }}'
+              }
+            });
 
