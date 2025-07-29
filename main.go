@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"azure-searcher/src/ui"
+	"github.com/matthewmyrick/azure-searcher/src/ui"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

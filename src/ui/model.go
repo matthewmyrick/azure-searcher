@@ -1,11 +1,11 @@
 package ui
 
 import (
-	"azure-searcher/src/azure"
-	"azure-searcher/src/cache"
-	"azure-searcher/src/config"
-	"azure-searcher/src/search"
-	"azure-searcher/src/types"
+	"github.com/matthewmyrick/azure-searcher/src/azure"
+	"github.com/matthewmyrick/azure-searcher/src/cache"
+	"github.com/matthewmyrick/azure-searcher/src/config"
+	"github.com/matthewmyrick/azure-searcher/src/search"
+	"github.com/matthewmyrick/azure-searcher/src/types"
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"

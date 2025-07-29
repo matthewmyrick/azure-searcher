@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"azure-searcher/src/types"
+	"github.com/matthewmyrick/azure-searcher/src/types"
 )
 
 // Match represents a fuzzy search match with its score

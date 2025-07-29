@@ -3,7 +3,7 @@ package ui
 import (
 	"time"
 
-	"azure-searcher/src/types"
+	"github.com/matthewmyrick/azure-searcher/src/types"
 )
 
 // Message types for the TUI application
