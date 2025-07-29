@@ -1,0 +1,57 @@
+name: Question
+description: Ask a question about using Azure Searcher
+title: "[Question]: "
+labels: ["question"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about Azure Searcher? We're here to help!
+        
+        Before asking, please check:
+        - [README.md](../README.md) for basic usage
+        - [docs/troubleshooting.md](../docs/troubleshooting.md) for common issues
+        - [Existing issues](../../issues) to see if your question has been answered
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: Ask your question here...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Provide any relevant context that might help us answer your question
+      placeholder: |
+        - What are you trying to accomplish?
+        - What steps have you already tried?
+        - Any specific environment details?
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment (if relevant)
+      description: System information that might be relevant to your question
+      value: |
+        - OS: [e.g., macOS 13.0, Ubuntu 22.04, Windows 11]
+        - Go version: [e.g., 1.23.1]
+        - Azure CLI version: [e.g., 2.45.0]
+        - Azure Searcher version: [e.g., 1.0.0]
+      placeholder: Fill in if relevant to your question
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have checked the README and documentation
+          required: true
+        - label: I have searched existing issues for similar questions
+          required: true

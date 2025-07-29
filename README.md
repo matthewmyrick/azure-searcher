@@ -1,5 +1,10 @@
 # Azure Searcher TUI
 
+[![Go Version](https://img.shields.io/github/go-mod/go-version/matthewmyrick/azure-searcher)](https://golang.org/)
+[![Release](https://img.shields.io/github/v/release/matthewmyrick/azure-searcher)](https://github.com/matthewmyrick/azure-searcher/releases)
+[![License](https://img.shields.io/github/license/matthewmyrick/azure-searcher)](LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/matthewmyrick/azure-searcher)](https://goreportcard.com/report/github.com/matthewmyrick/azure-searcher)
+
 A fast, interactive Terminal User Interface (TUI) application for browsing Azure resources with advanced parallel processing, search, and caching capabilities.
 
 ## Features
@@ -219,4 +224,12 @@ The cache file is human-readable JSON with the following structure:
 - [Bubble Tea](https://github.com/charmbracelet/bubbletea) - TUI framework
 - [Bubbles](https://github.com/charmbracelet/bubbles) - TUI components
 - [Lipgloss](https://github.com/charmbracelet/lipgloss) - Styling
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to get started.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
