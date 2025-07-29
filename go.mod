@@ -1,4 +1,4 @@
-module azure-searcher
+module github.com/matthewmyrick/azure-searcher
 
 go 1.23.1
 
