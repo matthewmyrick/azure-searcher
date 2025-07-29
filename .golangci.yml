@@ -4,11 +4,6 @@ run:
   timeout: 5m
   issues-exit-code: 1
   tests: true
-  skip-dirs:
-    - vendor
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*_generated\\.go$"
 
 linters:
   enable:
@@ -30,9 +25,6 @@ linters:
     
   disable:
     - typecheck     # Can be problematic with build tags
-    - deadcode      # Deprecated
-    - varcheck      # Deprecated  
-    - structcheck   # Deprecated
 
 linters-settings:
   gocyclo:
@@ -60,7 +52,6 @@ linters-settings:
   goimports:
     local-prefixes: github.com/matthewmyrick/azure-searcher
 
-issues:
   exclude-rules:
     # Exclude some linters from running on test files
     - path: _test\.go
@@ -97,7 +88,15 @@ issues:
   max-issues-per-linter: 0
   max-same-issues: 0
   
+issues:
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*_generated\\.go$"
+  exclude-dirs:
+    - vendor
+
 output:
-  format: colored-line-number
+  formats:
+    - format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
