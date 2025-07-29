@@ -1,0 +1,102 @@
+# golangci-lint configuration for azure-searcher
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+linters:
+  enable:
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Simplify code  
+    - govet         # Vet examines Go source code
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Static analysis checks
+    - unused        # Check for unused constants, variables, functions and types
+    - goimports     # Check imports formatting
+    - misspell      # Find commonly misspelled English words
+    - unconvert     # Remove unnecessary type conversions
+    - goconst       # Find repeated strings that could be replaced by a constant
+    - gocyclo       # Compute cyclomatic complexities
+    - gofmt         # Check whether code was gofmt-ed
+    - revive        # Fast, configurable, extensible, flexible, and beautiful linter for Go
+    - exportloopref # Check for pointers to enclosing loop variables
+    - nolintlint    # Reports ill-formed or insufficient nolint directives
+    
+  disable:
+    - typecheck     # Can be problematic with build tags
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+    
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+    
+  misspell:
+    locale: US
+    
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+        arguments:
+          - checkPrivateReceivers
+          - sayRepetitiveInsteadOfStutters
+      - name: package-comments
+        disabled: true  # We don't require package comments for all packages
+      - name: unexported-return
+        disabled: true  # Allow unexported types in return values
+        
+  goimports:
+    local-prefixes: github.com/matthewmyrick/azure-searcher
+
+  exclude-rules:
+    # Exclude some linters from running on test files
+    - path: _test\.go
+      linters:
+        - errcheck
+        - goconst
+        - gocyclo
+    
+    # Exclude gosec for test files (they often have hardcoded credentials for testing)
+    - path: _test\.go
+      linters:
+        - gosec
+        
+    # Exclude specific gosec rules that are often false positives
+    - linters:
+        - gosec
+      text: "G101" # Hardcoded credentials (often false positives)
+      
+    - linters:
+        - gosec  
+      text: "G204" # Command injection (we use exec.Command deliberately)
+      
+    # Allow long lines in test files
+    - path: _test\.go
+      linters:
+        - lll
+        
+    # Exclude ineffassign for test helpers
+    - path: testutil/
+      linters:
+        - ineffassign
+        
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  
+issues:
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*_generated\\.go$"
+  exclude-dirs:
+    - vendor
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
