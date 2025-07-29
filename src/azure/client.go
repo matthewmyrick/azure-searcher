@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"sort"
-	"sync"
-	"sync/atomic"
 
 	"azure-searcher/src/types"
 )

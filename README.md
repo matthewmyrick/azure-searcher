@@ -16,7 +16,7 @@ A fast, interactive Terminal User Interface (TUI) application for browsing Azure
   - Smart concurrency limits to prevent system slowdown
 - **Interactive TUI**: Clean, intuitive interface with keyboard navigation
 - **Animated Loading**: Spinner animation and progress bar during resource group loading
-- **Search Functionality**: Real-time search filtering of resource groups
+- **Two-Part Search**: Simple search format - `<resourcegroup> [space] <resource>` for intuitive filtering
 - **Collapsible Tree Structure**: Expand/collapse resource groups like folders
 - **Visual Icons**: Different icons for resource groups (📁/📂) vs resources (📄)
 - **Cache Status Indicators**: Visual indicators showing cached vs live data
@@ -46,15 +46,18 @@ go build -o azure-searcher
 ### Subscription Selection
 - **Arrow keys/j,k**: Navigate up/down
 - **Enter**: Select subscription
-- **q**: Quit
+- **Ctrl+Q**: Quit
 
 ### Resource Navigation
 - **Arrow keys/j,k**: Navigate up/down
-- **Enter/Space**: Expand/collapse resource groups
-- **/**: Focus search bar
-- **r**: Refresh data (bypass cache)
-- **Esc**: Return to subscription selection
-- **q**: Quit
+- **Enter**: Expand/collapse resource groups
+- **/**: Focus two-part search bar (press Esc to clear search)
+- **Ctrl+R**: Refresh data (bypass cache)
+- **PgUp/PgDn**: Scroll half-page up/down
+- **Home/g**: Jump to top
+- **End/G**: Jump to bottom
+- **Esc**: Return to subscription selection (or exit search mode if searching)
+- **Ctrl+Q**: Quit
 
 ## Performance Optimizations
 
@@ -71,6 +74,53 @@ The application uses a controlled multi-level parallel processing approach:
 - **>4 CPUs**: 5 resource groups, 10 resources per group
 
 This approach significantly reduces loading time while preventing system slowdown from excessive goroutines.
+
+## Two-Part Search
+
+The application features a simple and intuitive two-part search system:
+
+### Search Format
+```
+<resourcegroup> [space] <resource>
+```
+
+### How Two-Part Search Works
+- **Part 1 (Resource Group)**: The first part filters resource groups by name
+- **Part 2 (Resource)**: The second part (after space) filters resources within the matched groups
+- **Single Part**: If no space, only filters resource groups
+- **Maintains Structure**: Keeps the beautiful folder tree structure during search
+
+### Search Behavior
+- **Resource Group Filtering**: First part matches against resource group names
+- **Resource Filtering**: Second part (if provided) filters resources within matched groups
+- **Auto-Expansion**: Resource groups automatically expand when resource filtering is active
+- **Fuzzy Matching**: Supports both exact substring and fuzzy character matching
+- **Real-Time**: Results update as you type
+
+### Search Examples
+- `"prod"` → Shows all resource groups containing "prod"
+- `"prod vm"` → Shows resource groups with "prod", then filters for resources with "vm"
+- `"east storage"` → Shows "east" resource groups, filtered for "storage" resources
+- `"app func"` → Shows "app" resource groups, filtered for "func" resources
+- `"db mysql"` → Shows "db" resource groups, filtered for "mysql" resources
+
+### Navigation During Search
+- **Arrow Keys**: Navigate through the filtered tree structure
+- **Enter**: Expand/collapse resource group folders
+- **Clear Search**: Press `Esc` to clear search and return to full tree
+- **Visual Consistency**: Same folder icons (📁/📂) and resource icons (📄)
+
+### Search Logic
+1. **Step 1**: Filter resource groups by the first part of your query
+2. **Step 2**: If there's a space and second part, filter resources within those groups
+3. **Step 3**: Auto-expand groups when resource filtering is active
+4. **Step 4**: Maintain folder structure and navigation
+
+### Performance
+- Fast string matching with fallback to fuzzy search
+- Real-time filtering as you type
+- Maintains folder structure and expansion states
+- Simple and predictable search behavior
 
 ## Caching System
 

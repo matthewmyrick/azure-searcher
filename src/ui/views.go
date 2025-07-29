@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -39,7 +40,7 @@ func (m *Model) viewSubscriptions() string {
 		s += "\n"
 	}
 
-	s += "\nPress Enter to select, q to quit"
+	s += "\nPress Enter to select, Ctrl+Q to quit"
 	return s
 }
 
@@ -70,54 +71,126 @@ func (m *Model) viewLoading() string {
 	}
 }
 
-// viewResources renders the resource browsing view
+// viewResources renders the resource browsing view with scrolling
 func (m *Model) viewResources() string {
 	cacheStatus := "📡 Live data"
 	if m.LastLoadFromCache {
 		cacheStatus = "⚡ Cached data"
 	}
 
-	s := TitleStyle.Render(fmt.Sprintf("Resources in %s", m.SelectedSub.Name)) + "\n"
-	s += CacheStatusStyle.Render(cacheStatus) + "\n\n"
+	// Header (always visible)
+	header := TitleStyle.Render(fmt.Sprintf("Resources in %s", m.SelectedSub.Name)) + "\n"
+	header += CacheStatusStyle.Render(cacheStatus) + "\n\n"
+	
+	// Search mode and documentation
+	searchModeText := fmt.Sprintf("Search Mode: %s | Format: <resourcegroup> <resource> (e.g., 'prod sql' or just 'prod')", strings.Title(m.SearchMode))
+	header += CacheStatusStyle.Render(searchModeText) + "\n\n"
 
+	// Search input (always visible)
 	searchView := m.SearchInput.View()
 	if m.SearchInput.Focused() {
 		searchView = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Render(searchView)
 	}
-	s += searchView + "\n\n"
+	header += searchView + "\n\n"
 
+	// Build the full list of items (visible items with their display strings)
+	var items []string
+	var itemCursors []bool // Track which items should show cursor
 	visibleIdx := 0
+	
 	for _, rg := range m.FilteredGroups {
-		cursor := " "
 		icon := "📁"
 		if rg.Expanded {
 			icon = "📂"
 		}
 
-		if visibleIdx == m.Cursor {
+		// Resource group item
+		isSelected := visibleIdx == m.Cursor
+		itemCursors = append(itemCursors, isSelected)
+		
+		cursor := " "
+		if isSelected {
 			cursor = ">"
-			s += SelectedStyle.Render(fmt.Sprintf("%s %s %s (%d resources)", cursor, icon, rg.Name, len(rg.Resources)))
-		} else {
-			s += ResourceGroupStyle.Render(fmt.Sprintf("%s %s %s (%d resources)", cursor, icon, rg.Name, len(rg.Resources)))
 		}
-		s += "\n"
+		
+		rgLine := fmt.Sprintf("%s %s %s (%d resources)", cursor, icon, rg.Name, len(rg.Resources))
+		if isSelected {
+			items = append(items, SelectedStyle.Render(rgLine))
+		} else {
+			items = append(items, ResourceGroupStyle.Render(rgLine))
+		}
 		visibleIdx++
 
+		// Resource items (if expanded)
 		if rg.Expanded {
 			for _, res := range rg.Resources {
+				isSelected := visibleIdx == m.Cursor
+				itemCursors = append(itemCursors, isSelected)
+				
 				resCursor := " "
-				if visibleIdx == m.Cursor {
+				if isSelected {
 					resCursor = ">"
-					s += SelectedStyle.Render(fmt.Sprintf("  %s 📄 %s (%s)", resCursor, res.Name, res.Type))
-				} else {
-					s += ResourceStyle.Render(fmt.Sprintf("  %s 📄 %s (%s)", resCursor, res.Name, res.Type))
 				}
-				s += "\n"
+				
+				resLine := fmt.Sprintf("  %s 📄 %s (%s)", resCursor, res.Name, res.Type)
+				if isSelected {
+					items = append(items, SelectedStyle.Render(resLine))
+				} else {
+					items = append(items, ResourceStyle.Render(resLine))
+				}
 				visibleIdx++
 			}
 		}
 	}
 
-	s += "\nPress Enter/Space to expand/collapse, / to search, r to refresh, Esc to go back, q to quit"
-	return s
+	// Calculate viewport
+	viewportSize := m.CalculateResourceViewport()
+	if viewportSize < 1 {
+		viewportSize = 1
+	}
+
+	// Determine visible range
+	startIdx := m.ScrollOffset
+	endIdx := startIdx + viewportSize
+	if endIdx > len(items) {
+		endIdx = len(items)
+	}
+	if startIdx < 0 {
+		startIdx = 0
+	}
+	if startIdx >= len(items) {
+		startIdx = len(items) - 1
+		if startIdx < 0 {
+			startIdx = 0
+		}
+	}
+
+	// Build the scrollable content
+	content := ""
+	if len(items) == 0 {
+		content = CacheStatusStyle.Render("No resource groups found")
+	} else {
+		for i := startIdx; i < endIdx && i < len(items); i++ {
+			content += items[i] + "\n"
+		}
+		
+		// Add scroll indicators
+		if startIdx > 0 {
+			content = CacheStatusStyle.Render("↑ More items above") + "\n" + content
+		}
+		if endIdx < len(items) {
+			content += CacheStatusStyle.Render("↓ More items below")
+		}
+	}
+
+	// Footer (always visible)
+	var footer string
+	if len(items) == 0 {
+		footer = "\nEnter: expand/collapse | /: exact search | \\: fuzzy search | Ctrl+E: exit search | Ctrl+R: refresh | PgUp/PgDn: scroll | Esc: back | Ctrl+Q: quit"
+	} else {
+		footer = fmt.Sprintf("\nShowing %d-%d of %d items | Enter: expand/collapse | /: exact | \\: fuzzy | Ctrl+E: exit search | Ctrl+R: refresh | PgUp/PgDn: scroll | Esc: back | Ctrl+Q: quit", 
+			startIdx+1, endIdx, len(items))
+	}
+	
+	return header + content + footer
 }

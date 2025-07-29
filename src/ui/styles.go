@@ -16,7 +16,7 @@ var (
 		Bold(true)
 
 	ResourceStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#626262"))
+		Foreground(lipgloss.Color("#A0A0A0"))
 
 	CacheStatusStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("244"))

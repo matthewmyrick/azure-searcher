@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"azure-searcher/src/azure"
 	"azure-searcher/src/types"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -37,15 +38,20 @@ func LoadResourceGroupsCmd(m *Model) tea.Cmd {
 			return ResourceGroupsLoadedMsg{ResourceGroups: cachedRGs, FromCache: true}
 		}
 
-		// Cache miss - fetch from Azure with progress updates
-		m.ProgressChan = make(chan types.ProgressUpdate, 100)
+		// Cache miss - start the async fetching process
+		return StartAsyncFetchMsg{Model: m}
+	}
+}
 
+// StartAsyncFetchCmd starts async resource group fetching with progress updates
+func StartAsyncFetchCmd(m *Model, progressChan chan types.ProgressUpdate) tea.Cmd {
+	return func() tea.Msg {
 		go func() {
-			defer close(m.ProgressChan)
+			defer close(progressChan)
 
-			rgs, err := m.AzureFetcher.FetchResourceGroups(m.SelectedSub.ID, m.ProgressChan)
+			rgs, err := m.AzureFetcher.FetchResourceGroups(m.SelectedSub.ID, progressChan)
 			if err != nil {
-				m.ProgressChan <- types.ProgressUpdate{Error: err}
+				progressChan <- types.ProgressUpdate{Error: err}
 				return
 			}
 
@@ -55,13 +61,14 @@ func LoadResourceGroupsCmd(m *Model) tea.Cmd {
 			}
 
 			// Send final result
-			m.ProgressChan <- types.ProgressUpdate{
+			progressChan <- types.ProgressUpdate{
 				ResourceGroups: rgs,
 				Completed:      true,
 			}
 		}()
 
-		return ResourceGroupsLoadedMsg{ResourceGroups: []types.ResourceGroup{}, FromCache: false}
+		// Return nil since we're handling progress via the separate WaitForProgressCmd
+		return nil
 	}
 }
 
@@ -72,20 +79,32 @@ func TickCmd() tea.Cmd {
 	})
 }
 
-// WaitForProgressCmd waits for progress updates
+// WaitForProgressCmd waits for a single progress update
 func WaitForProgressCmd(progressChan <-chan types.ProgressUpdate) tea.Cmd {
 	return func() tea.Msg {
 		update, ok := <-progressChan
 		if !ok {
-			// Channel closed, no more updates
+			// Channel closed
 			return nil
 		}
+		
+		if update.Error != nil {
+			return ProgressUpdateMsg{Error: update.Error}
+		}
+		
+		if update.Completed {
+			return ProgressUpdateMsg{
+				Total:          update.Total,
+				Processed:      update.Processed,
+				ResourceGroups: update.ResourceGroups,
+				Completed:      true,
+			}
+		}
+		
+		// Send intermediate progress update
 		return ProgressUpdateMsg{
-			Total:          update.Total,
-			Processed:      update.Processed,
-			ResourceGroups: update.ResourceGroups,
-			Completed:      update.Completed,
-			Error:          update.Error,
+			Total:     update.Total,
+			Processed: update.Processed,
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"azure-searcher/src/azure"
 	"azure-searcher/src/cache"
 	"azure-searcher/src/config"
+	"azure-searcher/src/search"
 	"azure-searcher/src/types"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -15,7 +16,8 @@ import (
 // Model represents the main TUI model
 type Model struct {
 	// Application state
-	State string // "subscriptions", "loading", "resources"
+	State      string // "subscriptions", "loading", "resources"
+	SearchMode string // "fuzzy" or "exact"
 
 	// Data
 	Subscriptions      []types.Subscription
@@ -28,14 +30,17 @@ type Model struct {
 	Spinner     spinner.Model
 	Progress    progress.Model
 
-	// Navigation
-	Cursor       int
-	ScrollOffset int
+	// Navigation and viewport
+	Cursor         int
+	ScrollOffset   int
+	ViewportHeight int
+	ViewportWidth  int
 
 	// Services
 	AzureClient  *azure.Client
 	AzureFetcher *azure.Fetcher
 	CacheManager *cache.Manager
+	FuzzyMatcher *search.FuzzyMatcher
 
 	// Configuration
 	Config config.ConcurrencyConfig
@@ -54,7 +59,7 @@ type Model struct {
 func NewModel() (*Model, error) {
 	// Initialize search input
 	ti := textinput.New()
-	ti.Placeholder = "Search resource groups..."
+	ti.Placeholder = "Search: <resourcegroup> <resource> (e.g., 'prod vm' or just 'prod')..."
 	ti.CharLimit = 50
 	ti.Width = 50
 
@@ -81,22 +86,57 @@ func NewModel() (*Model, error) {
 		return nil, err
 	}
 
+	// Initialize fuzzy matcher
+	fuzzyMatcher := search.NewFuzzyMatcher()
+
 	return &Model{
 		State:           "subscriptions",
+		SearchMode:      "exact", // Default to exact search
 		SearchInput:     ti,
 		Spinner:         s,
 		Progress:        prog,
 		AzureClient:     azureClient,
 		AzureFetcher:    azureFetcher,
 		CacheManager:    cacheManager,
+		FuzzyMatcher:    fuzzyMatcher,
 		Config:          conf,
 		Subscriptions:   []types.Subscription{},
 		ResourceGroups:  []types.ResourceGroup{},
 		FilteredGroups:  []types.ResourceGroup{},
+		ViewportHeight:  20, // Default height, will be updated on window size
+		ViewportWidth:   80, // Default width, will be updated on window size
 	}, nil
 }
 
 // Init implements the tea.Model interface
 func (m *Model) Init() tea.Cmd {
 	return InitCmd(m.AzureClient)
+}
+
+// CalculateResourceViewport calculates the available space for the resource list
+func (m *Model) CalculateResourceViewport() int {
+	// Account for:
+	// - Title (2 lines: title + cache status)
+	// - Search input (3 lines: input + borders + spacing)
+	// - Help text (1 line)
+	// - Some padding (2 lines)
+	return m.ViewportHeight - 8
+}
+
+// EnsureCursorInViewport adjusts scroll offset to keep cursor visible
+func (m *Model) EnsureCursorInViewport() {
+	viewportSize := m.CalculateResourceViewport()
+	
+	// If cursor is above the viewport, scroll up
+	if m.Cursor < m.ScrollOffset {
+		m.ScrollOffset = m.Cursor
+	}
+	
+	// If cursor is below the viewport, scroll down
+	if m.Cursor >= m.ScrollOffset+viewportSize {
+		m.ScrollOffset = m.Cursor - viewportSize + 1
+		if m.ScrollOffset < 0 {
+			m.ScrollOffset = 0
+		}
+	}
 }

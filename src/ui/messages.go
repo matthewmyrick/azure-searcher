@@ -35,6 +35,11 @@ type (
 	ErrorMsg struct {
 		Err error
 	}
+
+	// StartAsyncFetchMsg indicates that async fetching should start
+	StartAsyncFetchMsg struct {
+		Model *Model
+	}
 )
 
 func (e ErrorMsg) Error() string {
