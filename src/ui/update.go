@@ -104,6 +104,8 @@ func (m *Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleSubscriptionKeys(msg)
 	case "resources":
 		return m.handleResourceKeys(msg)
+	case "config":
+		return m.handleConfigKeys(msg)
 	}
 	return m, nil
 }
@@ -113,6 +115,15 @@ func (m *Model) handleSubscriptionKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+q", "ctrl+c":
 		return m, tea.Quit
+	case "c":
+		if len(m.Subscriptions) > 0 {
+			m.ConfiguringSub = m.Subscriptions[m.Cursor]
+			m.State = "config"
+			m.ConfigMode = "menu"
+			m.ConfigCursor = 0
+			m.IntervalInput.SetValue("")
+		}
+		return m, nil
 	case "up", "k":
 		if m.Cursor > 0 {
 			m.Cursor--
@@ -134,6 +145,126 @@ func (m *Model) handleSubscriptionKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+// handleConfigKeys handles keys in configuration state
+func (m *Model) handleConfigKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.ConfigMode == "interval_input" {
+		return m.handleIntervalInputKeys(msg)
+	}
+	
+	// Calculate max cursor position
+	cacheEnabled := m.CacheManager.GetSubscriptionCacheEnabled(m.ConfiguringSub.ID)
+	maxCursor := 0
+	if cacheEnabled {
+		maxCursor = 1 // Cache toggle + auto-refresh
+	}
+	
+	// Menu mode
+	switch msg.String() {
+	case "ctrl+q", "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		m.State = "subscriptions"
+		return m, nil
+	case "up", "k":
+		if m.ConfigCursor > 0 {
+			m.ConfigCursor--
+		}
+	case "down", "j":
+		if m.ConfigCursor < maxCursor {
+			m.ConfigCursor++
+		}
+	case "enter", " ":
+		if m.ConfigCursor == 0 {
+			// Toggle cache setting
+			currentEnabled := m.CacheManager.GetSubscriptionCacheEnabled(m.ConfiguringSub.ID)
+			newEnabled := !currentEnabled
+			
+			err := m.CacheManager.SetSubscriptionCacheEnabled(m.ConfiguringSub.ID, newEnabled)
+			if err != nil {
+				// Handle error - for now just ignore
+			}
+			
+			// If disabling cache, turn off auto-refresh
+			if !newEnabled {
+				err = m.CacheManager.SetSubscriptionAutoRefresh(m.ConfiguringSub.ID, false, "")
+				if err != nil {
+					// Handle error - for now just ignore
+				}
+			}
+			
+			// Reset cursor if cache was disabled
+			if !newEnabled && m.ConfigCursor > 0 {
+				m.ConfigCursor = 0
+			}
+		} else if m.ConfigCursor == 1 && cacheEnabled {
+			// Toggle auto-refresh or enter interval input mode
+			currentAutoRefresh := m.CacheManager.GetSubscriptionAutoRefreshEnabled(m.ConfiguringSub.ID)
+			if !currentAutoRefresh {
+				// Enable auto-refresh with default interval
+				err := m.CacheManager.SetSubscriptionAutoRefresh(m.ConfiguringSub.ID, true, "1 dy")
+				if err != nil {
+					// Handle error - for now just ignore
+				}
+			} else {
+				// Enter interval input mode to change interval
+				m.ConfigMode = "interval_input"
+				currentInterval := m.CacheManager.GetSubscriptionRefreshInterval(m.ConfiguringSub.ID)
+				if currentInterval == "" {
+					currentInterval = "1 dy"
+				}
+				m.IntervalInput.SetValue(currentInterval)
+				m.IntervalInput.Focus()
+			}
+		}
+	}
+	return m, nil
+}
+
+// handleIntervalInputKeys handles keys when in interval input mode
+func (m *Model) handleIntervalInputKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	
+	switch msg.String() {
+	case "ctrl+q", "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		// Go back to menu mode
+		m.ConfigMode = "menu"
+		m.IntervalInput.Blur()
+		return m, nil
+	case "enter":
+		// Save refresh interval
+		intervalExpr := m.IntervalInput.Value()
+		if intervalExpr != "" {
+			// Validate interval expression
+			if err := m.CacheManager.ValidateRefreshInterval(intervalExpr); err != nil {
+				// For now, just ignore invalid expressions
+				// In a real implementation, you'd show an error to the user
+			} else {
+				// Save the refresh interval and enable auto-refresh
+				err := m.CacheManager.SetSubscriptionAutoRefresh(m.ConfiguringSub.ID, true, intervalExpr)
+				if err != nil {
+					// Handle error - for now just ignore
+				}
+			}
+		} else {
+			// Empty interval, disable auto-refresh
+			err := m.CacheManager.SetSubscriptionAutoRefresh(m.ConfiguringSub.ID, false, "")
+			if err != nil {
+				// Handle error - for now just ignore
+			}
+		}
+		m.ConfigMode = "menu"
+		m.IntervalInput.Blur()
+		return m, nil
+	default:
+		// Handle regular input
+		m.IntervalInput, cmd = m.IntervalInput.Update(msg)
+	}
+	
+	return m, cmd
 }
 
 // handleResourceKeys handles keys in resource browsing state

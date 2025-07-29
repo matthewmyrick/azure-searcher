@@ -2,9 +2,12 @@ package cache
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"azure-searcher/src/config"
@@ -114,6 +117,237 @@ func GetFilePath() string {
 		return config.CacheFilename
 	}
 	return filepath.Join(homeDir, ".azure-searcher", config.CacheFilename)
+}
+
+// GetConfigFilePath returns the config file path
+func GetConfigFilePath() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "azure-searcher-config.json"
+	}
+	return filepath.Join(homeDir, ".azure-searcher", "config.json")
+}
+
+// SubscriptionConfig represents cache configuration for a subscription
+type SubscriptionConfig struct {
+	CacheEnabled      bool   `json:"cache_enabled"`
+	AutoRefreshEnabled bool   `json:"auto_refresh_enabled"`
+	RefreshInterval   string `json:"refresh_interval"` // e.g., "2 hr", "30 min", "1 dy"
+}
+
+// Config represents the application configuration
+type Config struct {
+	Subscriptions map[string]SubscriptionConfig `json:"subscriptions"`
+	Version       string                        `json:"version"`
+}
+
+// GetSubscriptionCacheEnabled returns whether caching is enabled for a subscription
+func (m *Manager) GetSubscriptionCacheEnabled(subscriptionID string) bool {
+	config, err := loadConfigFromFile(GetConfigFilePath())
+	if err != nil {
+		return false // Default to disabled
+	}
+	
+	subConfig, exists := config.Subscriptions[subscriptionID]
+	if !exists {
+		return false // Default to disabled
+	}
+	
+	return subConfig.CacheEnabled
+}
+
+// SetSubscriptionCacheEnabled sets whether caching is enabled for a subscription
+func (m *Manager) SetSubscriptionCacheEnabled(subscriptionID string, enabled bool) error {
+	configFile := GetConfigFilePath()
+	config, err := loadConfigFromFile(configFile)
+	if err != nil {
+		config = &Config{
+			Subscriptions: make(map[string]SubscriptionConfig),
+			Version:       "1.0",
+		}
+	}
+	
+	// Get existing config or create new one
+	subConfig := config.Subscriptions[subscriptionID]
+	subConfig.CacheEnabled = enabled
+	config.Subscriptions[subscriptionID] = subConfig
+	
+	return saveConfigToFile(configFile, config)
+}
+
+// GetSubscriptionAutoRefreshEnabled returns whether auto-refresh is enabled for a subscription
+func (m *Manager) GetSubscriptionAutoRefreshEnabled(subscriptionID string) bool {
+	config, err := loadConfigFromFile(GetConfigFilePath())
+	if err != nil {
+		return false
+	}
+	
+	subConfig, exists := config.Subscriptions[subscriptionID]
+	if !exists {
+		return false
+	}
+	
+	return subConfig.AutoRefreshEnabled
+}
+
+// GetSubscriptionRefreshInterval returns the refresh interval for a subscription
+func (m *Manager) GetSubscriptionRefreshInterval(subscriptionID string) string {
+	config, err := loadConfigFromFile(GetConfigFilePath())
+	if err != nil {
+		return ""
+	}
+	
+	subConfig, exists := config.Subscriptions[subscriptionID]
+	if !exists {
+		return ""
+	}
+	
+	return subConfig.RefreshInterval
+}
+
+// SetSubscriptionAutoRefresh sets the auto-refresh settings for a subscription
+func (m *Manager) SetSubscriptionAutoRefresh(subscriptionID string, enabled bool, interval string) error {
+	configFile := GetConfigFilePath()
+	config, err := loadConfigFromFile(configFile)
+	if err != nil {
+		config = &Config{
+			Subscriptions: make(map[string]SubscriptionConfig),
+			Version:       "1.0",
+		}
+	}
+	
+	// Get existing config or create new one
+	subConfig := config.Subscriptions[subscriptionID]
+	subConfig.AutoRefreshEnabled = enabled
+	subConfig.RefreshInterval = interval
+	config.Subscriptions[subscriptionID] = subConfig
+	
+	return saveConfigToFile(configFile, config)
+}
+
+// ValidateRefreshInterval validates and parses a refresh interval string
+// Expected format: "<number> <unit>" where unit is "min", "hr", or "dy"
+// Examples: "30 min", "2 hr", "1 dy"
+func (m *Manager) ValidateRefreshInterval(interval string) error {
+	parts := strings.Fields(interval)
+	if len(parts) != 2 {
+		return fmt.Errorf("interval must be in format '<number> <unit>' (e.g., '2 hr', '30 min', '1 dy')")
+	}
+	
+	// Parse number
+	num, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return fmt.Errorf("first part must be a valid integer")
+	}
+	
+	if num <= 0 {
+		return fmt.Errorf("interval must be greater than 0")
+	}
+	
+	// Validate unit
+	unit := parts[1]
+	if unit != "min" && unit != "hr" && unit != "dy" {
+		return fmt.Errorf("unit must be 'min', 'hr', or 'dy'")
+	}
+	
+	return nil
+}
+
+// ParseRefreshInterval converts a refresh interval string to a time.Duration
+func (m *Manager) ParseRefreshInterval(interval string) (time.Duration, error) {
+	if err := m.ValidateRefreshInterval(interval); err != nil {
+		return 0, err
+	}
+	
+	parts := strings.Fields(interval)
+	num, _ := strconv.Atoi(parts[0]) // Already validated above
+	unit := parts[1]
+	
+	switch unit {
+	case "min":
+		return time.Duration(num) * time.Minute, nil
+	case "hr":
+		return time.Duration(num) * time.Hour, nil
+	case "dy":
+		return time.Duration(num) * 24 * time.Hour, nil
+	default:
+		return 0, fmt.Errorf("invalid unit: %s", unit)
+	}
+}
+
+// ShouldRefreshCache determines if cache should be refreshed based on auto-refresh settings
+func (m *Manager) ShouldRefreshCache(subscriptionID string) bool {
+	// Check if cache is enabled
+	if !m.GetSubscriptionCacheEnabled(subscriptionID) {
+		return false
+	}
+	
+	// Check if auto-refresh is enabled
+	if !m.GetSubscriptionAutoRefreshEnabled(subscriptionID) {
+		return false
+	}
+	
+	// Get refresh interval
+	intervalStr := m.GetSubscriptionRefreshInterval(subscriptionID)
+	if intervalStr == "" {
+		return false
+	}
+	
+	// Parse interval
+	interval, err := m.ParseRefreshInterval(intervalStr)
+	if err != nil {
+		return false
+	}
+	
+	// Check last cache update time
+	subCache, exists := m.data.Subscriptions[subscriptionID]
+	if !exists {
+		return true // No cache exists, should refresh
+	}
+	
+	// Check if enough time has passed
+	timeSinceUpdate := time.Since(subCache.LastUpdated)
+	return timeSinceUpdate >= interval
+}
+
+// loadConfigFromFile loads configuration from file
+func loadConfigFromFile(configFile string) (*Config, error) {
+	data, err := os.ReadFile(configFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &Config{
+				Subscriptions: make(map[string]SubscriptionConfig),
+				Version:       "1.0",
+			}, nil
+		}
+		return nil, err
+	}
+	
+	var config Config
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		return &Config{
+			Subscriptions: make(map[string]SubscriptionConfig),
+			Version:       "1.0",
+		}, nil
+	}
+	
+	return &config, nil
+}
+
+// saveConfigToFile saves configuration to file
+func saveConfigToFile(configFile string, config *Config) error {
+	dir := filepath.Dir(configFile)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return err
+	}
+	
+	return os.WriteFile(configFile, data, 0644)
 }
 
 // loadCacheFromFile loads cache data from the specified file

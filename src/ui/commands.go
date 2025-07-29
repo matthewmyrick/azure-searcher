@@ -33,12 +33,21 @@ func LoadSubscriptionsCmd(azureClient *azure.Client) tea.Cmd {
 // LoadResourceGroupsCmd loads resource groups for a subscription
 func LoadResourceGroupsCmd(m *Model) tea.Cmd {
 	return func() tea.Msg {
-		// Try to get from cache first
-		if cachedRGs, found := m.CacheManager.GetCachedResourceGroups(m.SelectedSub.ID); found {
-			return ResourceGroupsLoadedMsg{ResourceGroups: cachedRGs, FromCache: true}
+		// Check if caching is enabled for this subscription
+		if m.CacheManager.GetSubscriptionCacheEnabled(m.SelectedSub.ID) {
+			// Check if we should refresh based on auto-refresh settings
+			if m.CacheManager.ShouldRefreshCache(m.SelectedSub.ID) {
+				// Auto-refresh is triggered, fetch fresh data
+				return StartAsyncFetchMsg{Model: m}
+			}
+			
+			// Try to get from cache
+			if cachedRGs, found := m.CacheManager.GetCachedResourceGroups(m.SelectedSub.ID); found {
+				return ResourceGroupsLoadedMsg{ResourceGroups: cachedRGs, FromCache: true}
+			}
 		}
 
-		// Cache miss - start the async fetching process
+		// Cache disabled or cache miss - start the async fetching process
 		return StartAsyncFetchMsg{Model: m}
 	}
 }
@@ -55,9 +64,11 @@ func StartAsyncFetchCmd(m *Model, progressChan chan types.ProgressUpdate) tea.Cm
 				return
 			}
 
-			// Save to cache
-			if saveErr := m.CacheManager.CacheResourceGroups(m.SelectedSub.ID, m.SelectedSub.Name, rgs); saveErr != nil {
-				log.Printf("Failed to save cache: %v", saveErr)
+			// Save to cache only if caching is enabled for this subscription
+			if m.CacheManager.GetSubscriptionCacheEnabled(m.SelectedSub.ID) {
+				if saveErr := m.CacheManager.CacheResourceGroups(m.SelectedSub.ID, m.SelectedSub.Name, rgs); saveErr != nil {
+					log.Printf("Failed to save cache: %v", saveErr)
+				}
 			}
 
 			// Send final result

@@ -16,8 +16,14 @@ import (
 // Model represents the main TUI model
 type Model struct {
 	// Application state
-	State      string // "subscriptions", "loading", "resources"
+	State      string // "subscriptions", "loading", "resources", "config"
 	SearchMode string // "fuzzy" or "exact"
+	
+	// Configuration
+	ConfiguringSub    types.Subscription // Subscription being configured
+	ConfigCursor     int                 // Current cursor position in config
+	ConfigMode       string              // "menu" or "interval_input"
+	IntervalInput    textinput.Model     // Input for refresh interval
 
 	// Data
 	Subscriptions      []types.Subscription
@@ -63,6 +69,12 @@ func NewModel() (*Model, error) {
 	ti.CharLimit = 50
 	ti.Width = 50
 
+	// Initialize interval input
+	intervalInput := textinput.New()
+	intervalInput.Placeholder = "Enter refresh interval (e.g., '2 hr', '30 min', '1 dy')"
+	intervalInput.CharLimit = 20
+	intervalInput.Width = 40
+
 	// Initialize spinner
 	s := spinner.New()
 	s.Spinner = spinner.Dot
@@ -92,7 +104,9 @@ func NewModel() (*Model, error) {
 	return &Model{
 		State:           "subscriptions",
 		SearchMode:      "exact", // Default to exact search
+		ConfigMode:      "menu",  // Default config mode
 		SearchInput:     ti,
+		IntervalInput:   intervalInput,
 		Spinner:         s,
 		Progress:        prog,
 		AzureClient:     azureClient,

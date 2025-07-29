@@ -9,6 +9,11 @@ import (
 )
 
 func main() {
+	// Normal UI mode
+	runUI()
+}
+
+func runUI() {
 	// Initialize the UI model
 	model, err := ui.NewModel()
 	if err != nil {
