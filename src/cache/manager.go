@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"azure-searcher/src/config"
-	"azure-searcher/src/types"
+	"github.com/matthewmyrick/azure-searcher/src/config"
+	"github.com/matthewmyrick/azure-searcher/src/types"
 )
 
 // Manager handles cache operations

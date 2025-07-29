@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"azure-searcher/src/types"
+	"github.com/matthewmyrick/azure-searcher/src/types"
 )
 
 // FilterCriteria represents parsed filter criteria

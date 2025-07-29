@@ -5,7 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"azure-searcher/src/types"
+	"github.com/matthewmyrick/azure-searcher/src/types"
 )
 
 // Fetcher handles concurrent resource fetching operations

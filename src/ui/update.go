@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"azure-searcher/src/types"
+	"github.com/matthewmyrick/azure-searcher/src/types"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

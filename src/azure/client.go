@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 
-	"azure-searcher/src/types"
+	"github.com/matthewmyrick/azure-searcher/src/types"
 )
 
 // Client handles Azure CLI operations

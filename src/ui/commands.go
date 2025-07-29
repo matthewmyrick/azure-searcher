@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"time"
 
-	"azure-searcher/src/azure"
-	"azure-searcher/src/types"
+	"github.com/matthewmyrick/azure-searcher/src/azure"
+	"github.com/matthewmyrick/azure-searcher/src/types"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textinput"
